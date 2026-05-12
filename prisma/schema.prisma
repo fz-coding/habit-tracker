@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String?
+  avatar        String?
+  timezone      String    @default("Asia/Shanghai")
+  goalDescription String?  @map("goal_description")
+  createdAt     DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamp(6)
+  habits        Habit[]
+  habitLogs     HabitLog[]
+
+  @@map("user_profiles")
+}
+
+model Habit {
+  id              String    @id @default(cuid())
+  userId          String
+  name            String
+  icon            String    @default("🎯")
+  color           String    @default("#3B82F6")
+  category        String    @default("其他")
+  frequencyType   String    @map("frequency_type") @default("daily")
+  frequencyValue  Int?      @map("frequency_value")
+  reminderTime    String?   @map("reminder_time")
+  description     String?
+  archived        Boolean   @default(false)
+  createdAt       DateTime  @default(now()) @db.Timestamp(6)
+  updatedAt       DateTime  @updatedAt @db.Timestamp(6)
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habitLogs       HabitLog[]
+  
+  @@index([userId])
+  @@index([userId, archived])
+  @@map("habits")
+}
+
+model HabitLog {
+  id            String    @id @default(cuid())
+  habitId       String
+  userId        String
+  completedAt   DateTime  @default(now()) @db.Timestamp(6)
+  notes         String?
+  metadata      Json?
+  
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit         Habit     @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  
+  @@unique([habitId, completedAt])
+  @@index([userId])
+  @@index([habitId])
+  @@index([completedAt])
+  @@map("habit_logs")
+}
